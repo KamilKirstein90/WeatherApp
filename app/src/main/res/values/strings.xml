@@ -3,4 +3,5 @@
     <string name="get_city_id">Get City ID</string>
     <string name="weather_by_id">Weather by ID</string>
     <string name="weather_by_name">Weather by name</string>
+    <string name="label_cityNameHint">City Name</string>
 </resources>
