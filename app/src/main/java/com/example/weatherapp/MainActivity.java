@@ -36,30 +36,43 @@ public class MainActivity extends AppCompatActivity {
         btn_getWeatherByCityName = findViewById(R.id.btn_getWeatherByCityName);
         et_dataInput = findViewById(R.id.et_dataInput);
         lv_weatherReports = findViewById(R.id.lv_weatherReports);
+        final WeatherDataService weatherDataService = new WeatherDataService(MainActivity.this);
 
         // click listeners for each button.
         //*******************************************************************btn_cityID*******************************************************************
         btn_cityID.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                WeatherDataService weatherDataService = new WeatherDataService(MainActivity.this);
+
                 // Instantiate the RequestQueue.
 
-                //this didn´t return anything
-                String cityId = weatherDataService.getCityID(et_dataInput.getText().toString());
-                Toast.makeText(MainActivity.this, "Return the ID of: "+ cityId, Toast.LENGTH_SHORT).show();
+                weatherDataService.getCityID(et_dataInput.getText().toString(), new WeatherDataService.VolleyResponseListener()
+                {
+                    @Override
+                    public void onError(String message) {
+
+                        Toast.makeText(MainActivity.this, "Something is wrong", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onResponse(String cityID) {
+                        Toast.makeText(MainActivity.this, "Return the ID of: "+ cityID, Toast.LENGTH_SHORT).show();
+                    }
+                });
+
             }
         });
 
+        // in this button we want to get the weather forecast by a cityID
         //*******************************************************************btn_getWeatherByCityID*********************************************************
         btn_getWeatherByCityID.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                weatherDataService.getCityForecastByID(et_dataInput.getText().toString());
+                        //Toast.makeText(MainActivity.this, "Return the ID of: "+ cityID, Toast.LENGTH_SHORT).show();
+                    }
+                });
 
-                Toast.makeText(MainActivity.this, "You clicked btn_getWeatherByCityName",Toast.LENGTH_LONG).show();
-
-            }
-        });
 
         btn_getWeatherByCityName.setOnClickListener(new View.OnClickListener() {
             @Override
