@@ -23,49 +23,50 @@ public class WeatherDataService {
     public static final String QUERY_WEATHER_REPORT_BY_CITY_ID = "https://www.metaweather.com/api/location/";
 
     private Context context;
-     String cityID;
+    private String cityID;
+    List<WeatherReportModel> reports = new ArrayList<>();
 
-    // create the listener that is working as our callback function for the response
-    // and is specific to this method right now
+    // the callback is an interface with two generic methods that can use different types
+    public interface VolleyResponseListener{
 
-    public interface VolleyResponseListener {
-        void onError(String message);
+       <T> void onError(T message);
 
-        void onResponse(String cityID);
+       <T> void onResponse(T response);
+
     }
 
+    //constructor for the class
     public WeatherDataService(Context context) {
         this.context = context;
     }
+
     //************************************************************************getCityID****************************************************************
     public void getCityID(String cityName, VolleyResponseListener volleyResponseListener){
         // we created a constant from the query string with right click refactor and "Introduce constant..."
         String url =QUERY_FOR_CITY_ID + cityName;
 
-
         JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
             @Override
             public void onResponse(JSONArray response)
             {
-
                 // we get an JSONArray but want just one object from it so we create a JSONobject first
                 try
                 {
                     JSONObject cityInfo = response.getJSONObject(0);
                     cityID = cityInfo.getString("woeid");
-
+                    reports.clear();
                 }
                 catch (JSONException e)
                 {
                     e.printStackTrace();
                 }
-                volleyResponseListener.onResponse(cityID);
+                volleyResponseListener.<String>onResponse(cityID);
             }
 
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                volleyResponseListener.onError("Something Wrong");
+                volleyResponseListener.<String>onError("Something Wrong");
             }
         });
 
@@ -73,26 +74,21 @@ public class WeatherDataService {
     }
 
     //************************************************************************getWeatherByID***********************************************************
-    public void getCityForecastByID(String cityID){
-
-        List<WeatherReportModel> reports = new ArrayList<>();
+    public void getCityForecastByID(String cityID,VolleyResponseListener volleyResponseListener ){
 
         String url = QUERY_WEATHER_REPORT_BY_CITY_ID + cityID;
-        Log.d("LOG_URL",url);
-
         JsonObjectRequest  request = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
 
                 try
                 {
-
-                        JSONArray JSONReports = response.getJSONArray("consolidated_weather");
-                        for ( int i = 0; i  < JSONReports.length(); ++i)
-                        {
-                            JSONObject JSONReport = JSONReports.getJSONObject(i);
-
-                            WeatherReportModel report = new WeatherReportModel(
+                    //get the array from our JSON Object
+                    JSONArray JSONReports = response.getJSONArray("consolidated_weather");
+                    for ( int i = 0; i  < JSONReports.length(); ++i)
+                    {
+                        JSONObject JSONReport = JSONReports.getJSONObject(i);
+                        WeatherReportModel report = new WeatherReportModel(
                                                             JSONReport.getLong("id"),
                                                             JSONReport.getString("weather_state_name"),
                                                             JSONReport.getString("weather_state_abbr"),
@@ -109,30 +105,34 @@ public class WeatherDataService {
                                                             (float) JSONReport.getDouble("visibility"),
                                                             JSONReport.getInt("predictability")
                                                             );
-                            reports.add(report);
-                            if ( i == 0 )
-                            {
-                                Log.d("Erster Eintrag: ", report.toString());
-                            }
+                        reports.add(report);
 
-                        }
+
+                    }
                 }
                 catch (JSONException e)
                 {
                     e.printStackTrace();
                 }
-
+                // send the List of reports over a callback when the getCityForecastByID() (GET method) is ready
+                volleyResponseListener.onResponse(reports);
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
 
-                Toast.makeText(context, "Something Wrong", Toast.LENGTH_SHORT).show();
-
+                volleyResponseListener.onError("Something Wrong");
             }
         });
 
         RequestQueueSingleton.getInstance(context).addToRequestQueue(request);
+    }
+
+
+    //********************************************************************getWeatherByName*******************************************************************
+    public void getWeatherByName(String cityName, VolleyResponseListener volleyResponseListener){
+        getCityID(cityName,volleyResponseListener);
+        getCityForecastByID(cityID, volleyResponseListener);
     }
 
 }
